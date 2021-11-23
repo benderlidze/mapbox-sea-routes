@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8">
     <title>Add a line to a map using a GeoJSON source</title>
@@ -8,7 +7,6 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.0/mapbox-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-
     <style>
         body {
             margin: 0;
@@ -58,9 +56,7 @@
                 }
             });
 
-
             //fetch("https://demo2-2021-api.marine-digital.com/port/autocomplete?term=Odessa").then(i=>i.json()).then(i=>console.log(i))
-
             fetch("https://demo2-2021-api.marine-digital.com/route/simple", {
                 body: "port_from=LVRIX&port_to=JPTYO",
                 headers: {
