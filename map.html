@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add a line to a map using a GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic2Vyc2Vyc2VyIiwiYSI6ImNrZnBpaWF5azBpMWMyeHBmdzJpdno1NzgifQ.4vBDF2DNuk-beXljllf3Yg';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v10',
+            center: { lng: 89.36769339643462, lat: 3.4119213486060573 },
+            zoom: 1.48
+        });
+
+        map.on('load', () => {
+
+            map.addSource('route', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'properties': {},
+                }
+            });
+            map.addLayer({
+                'id': 'route',
+                'type': 'line',
+                'source': 'route',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': 'white',
+                    'line-width': 3
+                }
+            });
+
+
+            //fetch("https://demo2-2021-api.marine-digital.com/port/autocomplete?term=Odessa").then(i=>i.json()).then(i=>console.log(i))
+
+            fetch("https://demo2-2021-api.marine-digital.com/route/simple", {
+                body: "port_from=LVRIX&port_to=JPTYO",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                method: "POST"
+            })
+                .then(i => i.json())
+                .then(data => {
+
+                    const path = data.path
+                    const line = path.map(i => i.reverse());
+                    antimeridian(line)
+                    const route = turf.lineString(line)
+                    console.log('route', route);
+
+                    var bbox = turf.bbox(route);
+                    console.log('bbox', bbox);
+                    map.fitBounds(bbox, { padding: 30 })
+
+                    var collection = turf.featureCollection([
+                        route
+                    ]);
+                    map.getSource("route").setData(collection)
+
+                })
+        });
+
+        //lng += lng - prevLng > 180 ? -360 : prevLng - lng > 180 ? 360 : 0;
+        function antimeridian(elem) {
+            if (Array.isArray(elem)) {
+                for (var i = 0; i < elem.length; i++) {
+                    if (Array.isArray(elem[i][0])) {
+                        this.antimeridian(elem[i]);
+                    } else {
+                        if (elem[i][0] < 0) {
+                            elem[i][0] = 180 + (180 + elem[i][0]);
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+
+</body>
+
+</html>
