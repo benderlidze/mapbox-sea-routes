@@ -1,65 +1,74 @@
-// Layer map
-var map = L.map('mapid').setView([50.80925310310907, -0.1361937699561519], 3);
-L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA', {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    id: 'mapbox/dark-v10',
-    // tileSize: 256,
-    zoomControl: false,
-    accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-    style: 'mapbox://styles/mapbox/dark-v10', 
-// L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//   maxZoom: 18, attribution: '[insert correct attribution here!]'  
-}).addTo(map); 
-  
+mapboxgl.accessToken = 'pk.eyJ1Ijoic2Vyc2Vyc2VyIiwiYSI6ImNrZnBpaWF5azBpMWMyeHBmdzJpdno1NzgifQ.4vBDF2DNuk-beXljllf3Yg';
+const map = new mapboxgl.Map({
+  container: 'mapid',
+  style: 'mapbox://styles/mapbox/dark-v10',
+  center: { lng: 89.36769339643462, lat: 3.4119213486060573 },
+  zoom: 1.48
+});
 
-map.options.maxZoom = 20;
-map.options.minZoom = 3;
-map.removeControl(map.zoomControl);  
+map.on('load', () => {
+
+  map.addSource('route', {
+    'type': 'geojson',
+    'data': {
+      'type': 'Feature',
+      'properties': {},
+    }
+  });
+  map.addLayer({
+    'id': 'route',
+    'type': 'line',
+    'source': 'route',
+    'layout': {
+      'line-join': 'round',
+      'line-cap': 'round'
+    },
+    'paint': {
+      'line-color': 'white',
+      'line-width': 3
+    }
+  });
+
+
+});
+
+map.on("click", e => {
+  console.log('e.', e, e.lngLat);
+})
+
+function addRoute(data) {
+  const path = data.path
+  const line = path.map(i => i.reverse());
+  const temp = antimeridian(line)
+  const route = turf.lineString(temp)
+  console.log('route', route);
+
+  var bbox = turf.bbox(route);
+  console.log('bbox', bbox);
+  map.fitBounds(bbox, { padding: 30 })
+
+  var collection = turf.featureCollection([
+    route
+  ]);
+  map.getSource("route").setData(collection)
+}
 
 function clickZoom(e) {
-    map.setView(e.target.getLatLng(),5);
+  map.setView(e.target.getLatLng(), 5);
 }
 
 
 
- var markers = [
-    [ 23.135044427508504, -82.42811672821004, "MSC SEASIDE", "stay", "notification_warning","2"], 
-    [ 42.33975833769053, -70.98629466906411, "BUNGA LOTUS", "anchor", "notification_status","1" ] 
- ];
- 
- //Loop through the markers array
- for (var i=0; i<markers.length; i++) { 
-  var lon = markers[i][0];
-  var lat = markers[i][1]; 
-  var marker;
-  var markerIcon = L.divIcon(
-    {
-    html: `
-    <div class='marker__image ${markers[i][3]}'><img src='img/marker-icon-${markers[i][5]}.png' alt=''></div>
-    <div class='marker__image_container ${markers[i][3]} ${markers[i][4]}'>
-      <div class='marker__image_label'>
-        <div class='marker__image_title'>${markers[i][2]}</div>
-        <div class='marker__label__status'>Under way</div>  
-      </div>
-      <div class='popup'>Catanzaro<img src='img/arrow-forward-poup.svg' alt=''>Taranto<div class='popup_status'>Normal</div></div>
-    </div>
-    `,
-    className: 'marker-label',
-  }); 
-  var markerLocation = new L.LatLng( lon, lat);
-    marker = new L.marker(markerLocation, {icon: markerIcon}).addTo(map).on('click', clickZoom); 
-    map.addLayer(marker); 
-    marker.addTo(map).on('click', function () {
-      sidebar.toggle(); 
-      document.querySelector(".notification_panel").classList.remove('active');  
-      document.querySelector(".all_vessel_tab").classList.remove('active'); 
-      document.querySelector(".voyage_panel").classList.remove('active');   
-    }); 
- }
+var markers = [
+  [23.135044427508504, -82.42811672821004, "MSC SEASIDE", "stay", "notification_warning", "2"],
+  [42.33975833769053, -70.98629466906411, "BUNGA LOTUS", "anchor", "notification_status", "1"]
+];
+
+
 
 var markerIconOne = L.divIcon(
   {
-  html: `
+    html: `
   <div class='marker__image' style="margin-top: -28px;"><img src='img/marker-icon-3.png' alt=''></div>
   <div class='marker__image_container normal'>
     <div class='marker__image_label'>
@@ -69,91 +78,70 @@ var markerIconOne = L.divIcon(
     <div class='popup'>Catanzaro<img src='img/arrow-forward-poup.svg' alt=''>Taranto<div class='popup_status'>Normal</div></div>
   </div>
   `,
-  className: 'marker-label',
-  iconAnchor: [53.5, 9.9]
-});
+    className: 'marker-label',
+    iconAnchor: [53.5, 9.9]
+  });
 // var markerOne = L.marker([53.5, 9.9],
 //  {icon: markerIconOne}).addTo(map).on('click', clickZoom);
 
 // // zoom in function
 var zoomIn = document.getElementById('in');
-zoomIn.addEventListener('click',function zoomInFunc() {
-  map.setZoom(map.getZoom() + 1)
-}, false); 
+zoomIn.addEventListener('click', function zoomInFunc() {
+  map.zoomIn()
+}, false);
 
 // // zoom out function
 var zoomOut = document.getElementById('out');
-zoomOut.addEventListener('click',function zoomInFunc() {
-  map.setZoom(map.getZoom() - 1)
-}, false); 
-   
+zoomOut.addEventListener('click', function zoomInFunc() {
+  map.zoomOut()
+}, false);
+
 //  map sidebar
 var sidebar = L.control.sidebar('sidebar', {
-    closeButton: true,
-    position: 'left',
-    container: 'sidebar',
+  closeButton: true,
+  position: 'left',
+  container: 'sidebar',
 });
-map.addControl(sidebar);
-map.on('click', function () {
-    sidebar.hide();
-});
-// marker.addTo(map).on('click', function () {
-//   sidebar.toggle(); 
-//   document.querySelector(".notification_panel").classList.remove('active');  
-//   document.querySelector(".all_vessel_tab").classList.remove('active'); 
-//   document.querySelector(".voyage_panel").classList.remove('active');   
-// });
-// markerAnchor.addTo(map).on('click', function () {
-//   sidebar.toggle(); 
-//   document.querySelector(".notification_panel").classList.remove('active');  
-//   document.querySelector(".all_vessel_tab").classList.remove('active'); 
-//   document.querySelector(".voyage_panel").classList.remove('active');   
-// });
-// markerStay.addTo(map).on('click', function () {
-//   sidebar.toggle(); 
-//   document.querySelector(".notification_panel").classList.remove('active');  
-//   document.querySelector(".all_vessel_tab").classList.remove('active'); 
-//   document.querySelector(".voyage_panel").classList.remove('active');   
-// });
-// end map sidebar
+
+
 
 
 // panel open
 var voyagePanelOpen = document.querySelector(".voyage_link_open");
-voyagePanelOpen.addEventListener('click', function voyagePanelOpenFucn () {
-  document.querySelector(".voyage_panel").classList.toggle('active');  
-  sidebar.hide(); 
+voyagePanelOpen.addEventListener('click', function voyagePanelOpenFucn() {
+  document.querySelector(".voyage_panel").classList.toggle('active');
+  sidebar.hide();
   document.getElementById('weather_panel').classList.remove("weather_panel_open");
   document.getElementById('voyage_way_form').classList.remove("voyage_form_close");
   document.getElementById('voyage_way_result').classList.remove("voyage_form_open");
-}, false);  
+}, false);
 
 var notificationOpen = document.querySelector(".notification_link_open");
-notificationOpen.addEventListener('click', function notificationOpenFucn () {
-  document.querySelector(".notification_panel").classList.toggle('active');  
-  sidebar.hide(); 
-}, false);  
+notificationOpen.addEventListener('click', function notificationOpenFucn() {
+  document.querySelector(".notification_panel").classList.toggle('active');
+  sidebar.hide();
+}, false);
 
 var allVesselTabOpen = document.querySelector(".all_vessel_tab_open");
-allVesselTabOpen.addEventListener('click', function allVesselTabOpenFunc () {
-  document.querySelector(".all_vessel_tab").classList.toggle('active'); 
-  sidebar.hide(); 
-}, false);  
+allVesselTabOpen.addEventListener('click', function allVesselTabOpenFunc() {
+  document.querySelector(".all_vessel_tab").classList.toggle('active');
+  sidebar.hide();
+}, false);
 
 var allVesselTabClose = document.querySelector(".all_vessel_tab_close");
-allVesselTabClose.addEventListener('click', function allVesselTabCloseFunc () {
-  document.querySelector(".all_vessel_tab").classList.toggle('active'); 
-}, false);   
+allVesselTabClose.addEventListener('click', function allVesselTabCloseFunc() {
+  document.querySelector(".all_vessel_tab").classList.toggle('active');
+}, false);
 
 var allTabClose = document.querySelector(".voyage_link_map");
-allTabClose.addEventListener('click', function allTabCloseFunc () {
-  document.querySelector(".all_vessel_tab").classList.remove('active'); 
-  document.querySelector(".all_vessel_tab").classList.remove('active'); 
-  document.querySelector(".notification_panel").classList.remove('active');  
-  document.querySelector(".voyage_panel").classList.remove('active'); 
-  document.getElementById('weather_panel').classList.remove("weather_panel_open"); 
-  sidebar.hide(); 
-}, false);  
+allTabClose.addEventListener('click', function allTabCloseFunc() {
+  document.querySelector(".all_vessel_tab").classList.remove('active');
+  document.querySelector(".all_vessel_tab").classList.remove('active');
+  document.querySelector(".notification_panel").classList.remove('active');
+  document.querySelector(".voyage_panel").classList.remove('active');
+  document.getElementById('weather_panel').classList.remove("weather_panel_open");
+  sidebar.hide();
+}, false);
 // end panel open
 
 
@@ -162,7 +150,7 @@ allTabClose.addEventListener('click', function allTabCloseFunc () {
 
 
 var yourApiKey = 'faeeb9b8701d5f1c36c00e9f016cc027';
-   
+
 var time = 1631311395;
 // var time = 1631314995;
 // var time = 1631318595;
@@ -170,105 +158,105 @@ var time = 1631311395;
 // var time = 1631325795;
 // var time = 1631336595;
 
-var cloudsLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date='+time+'&palette=0:FFFFFF00;10:FDFDFF19;20:FCFBFF26;30:FAFAFF33;40:F9F8FF4C;50:F7F7FF66;60:F6F5FF8C;70:F4F4FFBF;80:E9E9DFCC;90:DEDEDED8;100:D2D2D2FF;200:D2D2D2FF &opacity=0.3&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    id: 'mapbox/dark-v10',
-    // tileSize: 256,
-    zoomControl: false,
+var cloudsLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date=' + time + '&palette=0:FFFFFF00;10:FDFDFF19;20:FCFBFF26;30:FAFAFF33;40:F9F8FF4C;50:F7F7FF66;60:F6F5FF8C;70:F4F4FFBF;80:E9E9DFCC;90:DEDEDED8;100:D2D2D2FF;200:D2D2D2FF &opacity=0.3&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+  attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+  id: 'mapbox/dark-v10',
+  // tileSize: 256,
+  zoomControl: false,
   edgeBufferTiles: 5,
-    accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-    style: 'mapbox://styles/mapbox/dark-v10', 
-});  
-var windLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/WS10/{z}/{x}/{y}?date='+time+'&opacity=0.3&palette=1:FFFFFF;5:9EB2F6;15:557BFF;25:406AFF;50:2455FF;100:1343EC;200:11225E&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    id: 'mapbox/dark-v10',
-    // tileSize: 256,
-    zoomControl: false,
+  accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
+  style: 'mapbox://styles/mapbox/dark-v10',
+});
+var windLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/WS10/{z}/{x}/{y}?date=' + time + '&opacity=0.3&palette=1:FFFFFF;5:9EB2F6;15:557BFF;25:406AFF;50:2455FF;100:1343EC;200:11225E&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+  attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+  id: 'mapbox/dark-v10',
+  // tileSize: 256,
+  zoomControl: false,
   edgeBufferTiles: 5,
-    accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-    style: 'mapbox://styles/mapbox/dark-v10', 
-}); 
-var tempLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date='+time+'&opacity=0.3&palette=-65:C322DB;-55:C322DB;-45:C322DB;-40:C322DB;-30:9765FF;-20:2698FD;-10:20C4E8;0:23DDDD;10:C2FF28;20:FFF028;25:FFC228;30:FC8014&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    id: 'mapbox/dark-v10',
-    // tileSize: 256,
-    zoomControl: false,
+  accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
+  style: 'mapbox://styles/mapbox/dark-v10',
+});
+var tempLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date=' + time + '&opacity=0.3&palette=-65:C322DB;-55:C322DB;-45:C322DB;-40:C322DB;-30:9765FF;-20:2698FD;-10:20C4E8;0:23DDDD;10:C2FF28;20:FFF028;25:FFC228;30:FC8014&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+  attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+  id: 'mapbox/dark-v10',
+  // tileSize: 256,
+  zoomControl: false,
   edgeBufferTiles: 5,
-    accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-    style: 'mapbox://styles/mapbox/dark-v10', 
-}); 
-var rainLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/PAC0/{z}/{x}/{y}?date='+time+'&opacity=0.6&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    id: 'mapbox/dark-v10',
-    // tileSize: 256,
-    zoomControl: false,
+  accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
+  style: 'mapbox://styles/mapbox/dark-v10',
+});
+var rainLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/PAC0/{z}/{x}/{y}?date=' + time + '&opacity=0.6&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+  attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+  id: 'mapbox/dark-v10',
+  // tileSize: 256,
+  zoomControl: false,
   edgeBufferTiles: 5,
-    accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-    style: 'mapbox://styles/mapbox/dark-v10', 
-}); 
-    
-    
-    // rainLayer.addTo(map); 
+  accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
+  style: 'mapbox://styles/mapbox/dark-v10',
+});
+
+
+// rainLayer.addTo(map); 
 var weatherCloudsPanel = document.getElementById("weather_clouds_panel");
-weatherCloudsPanel.addEventListener('click', function weatherCloudsPanelFunc () {   
-  if(weatherCloudsPanel.classList.contains('panel_open')){
+weatherCloudsPanel.addEventListener('click', function weatherCloudsPanelFunc() {
+  if (weatherCloudsPanel.classList.contains('panel_open')) {
     weatherCloudsPanel.classList.remove('panel_open')
-    cloudsLayer.remove(map); 
+    cloudsLayer.remove(map);
   }
-  else{
+  else {
     weatherCloudsPanel.classList.add('panel_open')
-    cloudsLayer.addTo(map);  
+    cloudsLayer.addTo(map);
   }
 }, false);
 
 var weatherWindPanel = document.getElementById("weather_wind_panel");
-weatherWindPanel.addEventListener('click', function weatherWindPanelFunc () {   
-  if(weatherWindPanel.classList.contains('panel_open')){
+weatherWindPanel.addEventListener('click', function weatherWindPanelFunc() {
+  if (weatherWindPanel.classList.contains('panel_open')) {
     weatherWindPanel.classList.remove('panel_open')
-    windLayer.remove(map); 
+    windLayer.remove(map);
   }
-  else{
+  else {
     weatherWindPanel.classList.add('panel_open')
-    windLayer.addTo(map);  
+    windLayer.addTo(map);
   }
 }, false);
 
 var weatherTempPanel = document.getElementById("weather_temp_panel");
-weatherTempPanel.addEventListener('click', function weatherTempPanelFunc () {  
-  if(weatherTempPanel.classList.contains('panel_open')){
+weatherTempPanel.addEventListener('click', function weatherTempPanelFunc() {
+  if (weatherTempPanel.classList.contains('panel_open')) {
     weatherTempPanel.classList.remove('panel_open')
-    tempLayer.remove(map); 
+    tempLayer.remove(map);
   }
-  else{
+  else {
     weatherTempPanel.classList.add('panel_open')
-    tempLayer.addTo(map);  
+    tempLayer.addTo(map);
   }
 }, false);
 
 var weatherRainPanel = document.getElementById("weather_rain_panel");
-weatherRainPanel.addEventListener('click', function weatherRainPanelFunc () {  
-  if(weatherRainPanel.classList.contains('panel_open')){
+weatherRainPanel.addEventListener('click', function weatherRainPanelFunc() {
+  if (weatherRainPanel.classList.contains('panel_open')) {
     weatherRainPanel.classList.remove('panel_open')
-    rainLayer.remove(map); 
+    rainLayer.remove(map);
   }
-  else{
+  else {
     weatherRainPanel.classList.add('panel_open')
-    rainLayer.addTo(map);  
+    rainLayer.addTo(map);
   }
 }, false);
- 
+
 var removeAllPanel = document.getElementById("remove_all_panel");
-removeAllPanel.addEventListener('click', function removeAllPanelFunc () {   
-    weatherRainPanel.classList.remove('panel_open');
-    weatherTempPanel.classList.remove('panel_open');
-    weatherCloudsPanel.classList.remove('panel_open');
-    weatherWindPanel.classList.remove('panel_open');
-    rainLayer.remove(map); 
-    tempLayer.remove(map);  
-    windLayer.remove(map);  
-    cloudsLayer.remove(map);  
+removeAllPanel.addEventListener('click', function removeAllPanelFunc() {
+  weatherRainPanel.classList.remove('panel_open');
+  weatherTempPanel.classList.remove('panel_open');
+  weatherCloudsPanel.classList.remove('panel_open');
+  weatherWindPanel.classList.remove('panel_open');
+  rainLayer.remove(map);
+  tempLayer.remove(map);
+  windLayer.remove(map);
+  cloudsLayer.remove(map);
 }, false);
- 
+
 
 // function voyage_check_result(){
 //   var wayFrom = document.getElementById('way_from').value;
@@ -284,49 +272,49 @@ var wayFromPort = document.getElementById('way_from');
 
 wayFromPort.addEventListener('keyup', wayFromPortFunc);
 
-function wayFromPortFunc(e) {    
-  if(this.value.length >= 3){ 
-  var way_from_result = document.getElementById('way_from_result');
-  // way_from.addEventListener('change', (event) => { 
-  // function way_from_result() {
-    const keyName = wayFromPort.value; 
+function wayFromPortFunc(e) {
+  if (this.value.length >= 3) {
+    var way_from_result = document.getElementById('way_from_result');
+    // way_from.addEventListener('change', (event) => { 
+    // function way_from_result() {
+    const keyName = wayFromPort.value;
     var requestOptions = {
       method: 'GET',
       redirect: 'follow'
-    }; 
-    fetch("https://demo2-2021-api.marine-digital.com/port/autocomplete?term="+keyName, requestOptions)
-    .then(response => response.text())
-    .then(result => {
-      console.log(result);
-      var autComplResultArray=JSON.parse(result); 
-      way_from_result.innerHTML = '';
-      for(let i=0;i<autComplResultArray.length;++i){
-        console.log(autComplResultArray[i].locode);
-        // console.log(autComplResultArray[i].id); 
-        let div = document.createElement('div');
-        div.classList.add('result_item')
-        var autComplRepeatArray = [];
-        autComplRepeatArray.push(autComplResultArray[i].locode);
-        // for(let j=0;j<autComplRepeatArray.length;++i){ 
+    };
+    fetch("https://demo2-2021-api.marine-digital.com/port/autocomplete?term=" + keyName, requestOptions)
+      .then(response => response.text())
+      .then(result => {
+        console.log(result);
+        var autComplResultArray = JSON.parse(result);
+        way_from_result.innerHTML = '';
+        for (let i = 0; i < autComplResultArray.length; ++i) {
+          console.log(autComplResultArray[i].locode);
+          // console.log(autComplResultArray[i].id); 
+          let div = document.createElement('div');
+          div.classList.add('result_item')
+          var autComplRepeatArray = [];
+          autComplRepeatArray.push(autComplResultArray[i].locode);
+          // for(let j=0;j<autComplRepeatArray.length;++i){ 
           // if(autComplRepeatArray[j] != autComplResultArray[i].locode){
-            console.log(autComplResultArray[i].locode);
-            autComplRepeatArray.push(autComplResultArray[i].locode);
-            div.innerHTML = autComplResultArray[i].locode;
-            way_from_result.append(div);
+          console.log(autComplResultArray[i].locode);
+          autComplRepeatArray.push(autComplResultArray[i].locode);
+          div.innerHTML = autComplResultArray[i].locode;
+          way_from_result.append(div);
           // }
-        // }
-        div.addEventListener('click', wayResultItemFunction, false);
-        function wayResultItemFunction() {
-            console.log( this.innerHTML );
-            var wayFromPort = document.getElementById('way_from'); 
+          // }
+          div.addEventListener('click', wayResultItemFunction, false);
+          function wayResultItemFunction() {
+            console.log(this.innerHTML);
+            var wayFromPort = document.getElementById('way_from');
             wayFromPort.value = this.innerHTML;
             way_from_result.innerHTML = '';
+          }
         }
-      }  
-    })
-    .catch(error => console.log('error', error)); 
+      })
+      .catch(error => console.log('error', error));
 
-// };
+    // };
 
   }
 };
@@ -334,63 +322,63 @@ function wayFromPortFunc(e) {
 var wayToPort = document.getElementById('way_to');
 wayToPort.addEventListener('keyup', wayToPortFunc);
 
-function wayToPortFunc(e) {   
-  if(this.value.length >= 3){
-  var way_to_result = document.getElementById('way_to_result');
-// way_to.addEventListener('change', (event) => {
-  const keyName = wayToPort.value; 
-  var requestOptions = {
-    method: 'GET',
-    redirect: 'follow'
-  }; 
-  fetch("https://demo2-2021-api.marine-digital.com/port/autocomplete?term="+keyName, requestOptions)
-    .then(response => response.text())
-    .then(result => {
-      console.log(result);
-      var autComplResultArray=JSON.parse(result); 
-      way_to_result.innerHTML = '';
-      for(let i=0;i<autComplResultArray.length;++i){
-        console.log(autComplResultArray[i].locode);
-        console.log(autComplResultArray[i].id); 
-        let div = document.createElement('div');
-        div.classList.add('result_item')
-        div.innerHTML = autComplResultArray[i].locode;
-        way_to_result.append(div);
-        div.addEventListener('click', wayResultItemFunction, false);
-        function wayResultItemFunction() {
-            console.log( this.innerHTML );
-            var wayToPort = document.getElementById('way_to'); 
+function wayToPortFunc(e) {
+  if (this.value.length >= 3) {
+    var way_to_result = document.getElementById('way_to_result');
+    // way_to.addEventListener('change', (event) => {
+    const keyName = wayToPort.value;
+    var requestOptions = {
+      method: 'GET',
+      redirect: 'follow'
+    };
+    fetch("https://demo2-2021-api.marine-digital.com/port/autocomplete?term=" + keyName, requestOptions)
+      .then(response => response.text())
+      .then(result => {
+        console.log(result);
+        var autComplResultArray = JSON.parse(result);
+        way_to_result.innerHTML = '';
+        for (let i = 0; i < autComplResultArray.length; ++i) {
+          console.log(autComplResultArray[i].locode);
+          console.log(autComplResultArray[i].id);
+          let div = document.createElement('div');
+          div.classList.add('result_item')
+          div.innerHTML = autComplResultArray[i].locode;
+          way_to_result.append(div);
+          div.addEventListener('click', wayResultItemFunction, false);
+          function wayResultItemFunction() {
+            console.log(this.innerHTML);
+            var wayToPort = document.getElementById('way_to');
             wayToPort.value = this.innerHTML;
             way_to_result.innerHTML = '';
+          }
         }
-      }  
-    })
-    .catch(error => console.log('error', error)); 
+      })
+      .catch(error => console.log('error', error));
 
-// });
+    // });
 
   }
 };
- 
+
 // set today date to input date
-var path=[];
+var path = [];
 var wayLine;
 const spinner = document.getElementById("spinner");
 // document.getElementById('date').value = new Date().toISOString().slice(0, 10);
-function waySearchFunc(){
+function waySearchFunc() {
   var wayFrom = document.getElementById('way_from').value;
-  var wayTo = document.getElementById('way_to').value; 
-  if(!wayFrom == 0 && !wayTo == 0 ){ 
+  var wayTo = document.getElementById('way_to').value;
+  if (!wayFrom == 0 && !wayTo == 0) {
     // console.log('test'); //[array with valid inputs]
 
     document.getElementById('voyage_way_form').classList.add("voyage_form_close");
     // document.getElementById('voyage_way_result').classList.add("voyage_form_open");
-  document.querySelector(".voyage_panel").classList.remove('active'); 
-    document.getElementById('voyage_form_back_link').classList.add("voyage_form_back_link_open"); 
+    document.querySelector(".voyage_panel").classList.remove('active');
+    document.getElementById('voyage_form_back_link').classList.add("voyage_form_back_link_open");
     // document.getElementById('weather_panel').classList.add("weather_panel_open");
-  } 
- 
-// .remove(mymap)
+  }
+
+  // .remove(mymap)
   // request
   var myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
@@ -400,8 +388,8 @@ function waySearchFunc(){
   var way_to = document.getElementById('way_to').value;
   // var way_from = 'LVRIX';
   // var way_to = 'DOCAI';
-  console.log(way_from); 
-  console.log(way_to);  
+  console.log(way_from);
+  console.log(way_to);
   // urlencoded.append("port_from", way_from);
   // urlencoded.append("port_to", way_to);
   urlencoded.append("port_from", way_from);
@@ -415,269 +403,265 @@ function waySearchFunc(){
   };
   spinner.removeAttribute('hidden');
   fetch("https://demo2-2021-api.marine-digital.com/route/simple", requestOptions)
-    .then(response => response.text())
-    .then(result => {  
-      // for (let i=0;i<result.path) {
-      //     if (result.hasOwnProperty(r)) {
-      //         path.push(r)
-      //     }
-      // }
+    .then(response => response.json())
+    .then(result => {
+
       console.log(result);
-      resultArray=JSON.parse(result);
-      path=resultArray.path
       spinner.setAttribute('hidden', '');
       // console.log(path);
-      wayLine = L.polyline(path, {color: '#3C87FC'});
-      wayLine.addTo(map);
+      // wayLine = L.polyline(path, { color: '#3C87FC' });
+      // wayLine.addTo(map);
       // wayLine.removeFrom(map);
-    // playBackFunc();
+      // playBackFunc();
+
+      addRoute(result)
     })
-    .catch(error => console.log('error', error));  
+    .catch(error => console.log('error', error));
 }
 
 
-function waySearchSnipetFunc(){
-  document.querySelector(".voyage_panel").classList.remove('active');  
-    document.getElementById('weather_panel').classList.remove("weather_panel_open");
-  sidebar.show(); 
-} 
+function waySearchSnipetFunc() {
+  document.querySelector(".voyage_panel").classList.remove('active');
+  document.getElementById('weather_panel').classList.remove("weather_panel_open");
+  sidebar.show();
+}
 
 
 var voyageFormBackLink = document.getElementById("voyage_form_back_link");
-voyageFormBackLink.addEventListener('click', function voyageFormBackLinkFunc () {  
-    document.getElementById('voyage_way_form').classList.remove("voyage_form_close");
-    document.getElementById('voyage_way_result').classList.remove("voyage_form_open");
-    document.getElementById('voyage_form_back_link').classList.remove("voyage_form_back_link_open");
-    document.getElementById('weather_panel').classList.remove("weather_panel_open");
-}, false); 
+voyageFormBackLink.addEventListener('click', function voyageFormBackLinkFunc() {
+  document.getElementById('voyage_way_form').classList.remove("voyage_form_close");
+  document.getElementById('voyage_way_result').classList.remove("voyage_form_open");
+  document.getElementById('voyage_form_back_link').classList.remove("voyage_form_back_link_open");
+  document.getElementById('weather_panel').classList.remove("weather_panel_open");
+}, false);
 
 
 
 // PLAYBACK START
-function playBackFunc(){
-      console.log(path);
-// const convertedCoords = coords.map(({ lon, lat }) => [lon, lat]);
-const convertedCoords = path;
+function playBackFunc() {
+  console.log(path);
+  // const convertedCoords = coords.map(({ lon, lat }) => [lon, lat]);
+  const convertedCoords = path;
 
-const curvePath = [];
-for (let i = 1; i < convertedCoords.length; i++) {
+  const curvePath = [];
+  for (let i = 1; i < convertedCoords.length; i++) {
     const [lon, lat] = convertedCoords[i];
     curvePath.push('L', [lat, lon]);
-}
+  }
 
-const startPoint = convertedCoords[0];
-// L.curve([
-//     'M', [startPoint[1], startPoint[0]],
-//     ...curvePath
-// ]).addTo(map);
+  const startPoint = convertedCoords[0];
+  // L.curve([
+  //     'M', [startPoint[1], startPoint[0]],
+  //     ...curvePath
+  // ]).addTo(map);
 
-function createTimestamps(isPlaybackTimestamps = true) {
+  function createTimestamps(isPlaybackTimestamps = true) {
     let start = new Date('09.01.2021 10:00:00').getTime();
     const end = new Date('09.01.2021 18:00:00').getTime();
     const intervalValue = isPlaybackTimestamps ?
-    Math.ceil((end - start) / (convertedCoords.length - 1)) : 60000 * 10;
+      Math.ceil((end - start) / (convertedCoords.length - 1)) : 60000 * 10;
     const timestamps = isPlaybackTimestamps ? [start] : [];
     while (start < end) {
-        start += intervalValue;
-        if (isPlaybackTimestamps) {
-            timestamps.push(start);
-        } else {
-            const timestamp = { playbackInterval: start };
-            const { length } = timestamps;
-            timestamp.apiInterval = length ? timestamps[length - 1].apiInterval : start;
-            timestamp.apiInterval = timestamp.apiInterval + (3 * 3600000);
-            timestamps.push(timestamp);
-        }
+      start += intervalValue;
+      if (isPlaybackTimestamps) {
+        timestamps.push(start);
+      } else {
+        const timestamp = { playbackInterval: start };
+        const { length } = timestamps;
+        timestamp.apiInterval = length ? timestamps[length - 1].apiInterval : start;
+        timestamp.apiInterval = timestamp.apiInterval + (3 * 3600000);
+        timestamps.push(timestamp);
+      }
     }
 
     return timestamps;
-}
+  }
 
-const timestamps = createTimestamps();
-const timestampsIntervals = createTimestamps(false);
+  const timestamps = createTimestamps();
+  const timestampsIntervals = createTimestamps(false);
 
-const demoRoute = {
+  const demoRoute = {
     type: 'Feature',
     geometry: {
-        type: 'MultiPoint',
-        coordinates: convertedCoords,
+      type: 'MultiPoint',
+      coordinates: convertedCoords,
     },
     properties: {
-        time: timestamps,
+      time: timestamps,
     }
-}; 
-const numberOfIntervals = timestampsIntervals.length;
-const realStartDate = new Date('09.01.2021 10:00:00').getTime();
-const realEndDate = new Date('09.12.2021 12:53:00').getTime();
-const realIntervalValue = (realEndDate - realStartDate) / numberOfIntervals;
-const realTimestampsIntervals = [];
-for (let i = 1; i <= numberOfIntervals; i++) {
+  };
+  const numberOfIntervals = timestampsIntervals.length;
+  const realStartDate = new Date('09.01.2021 10:00:00').getTime();
+  const realEndDate = new Date('09.12.2021 12:53:00').getTime();
+  const realIntervalValue = (realEndDate - realStartDate) / numberOfIntervals;
+  const realTimestampsIntervals = [];
+  for (let i = 1; i <= numberOfIntervals; i++) {
     realTimestampsIntervals.push(realStartDate + i * realIntervalValue);
-}
- 
-function onPlaybackTimeChange(event) {
+  }
+
+  function onPlaybackTimeChange(event) {
     const findTimestampIndex = timestampsIntervals.findIndex(item => item.playbackInterval === event);
     if (findTimestampIndex !== -1) {
-        const { apiInterval } = timestampsIntervals[findTimestampIndex];
-        console.log('real interval date: ', new Date(realTimestampsIntervals[findTimestampIndex]));
-        var refreshTime = apiInterval/1000;
-  
+      const { apiInterval } = timestampsIntervals[findTimestampIndex];
+      console.log('real interval date: ', new Date(realTimestampsIntervals[findTimestampIndex]));
+      var refreshTime = apiInterval / 1000;
 
-  if($( "#weather_clouds_panel" ).hasClass( "panel_open" )){
-      cloudsLayer.remove(map); 
-      cloudsLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date='+refreshTime+'&palette=0:FFFFFF00;10:FDFDFF19;20:FCFBFF26;30:FAFAFF33;40:F9F8FF4C;50:F7F7FF66;60:F6F5FF8C;70:F4F4FFBF;80:E9E9DFCC;90:DEDEDED8;100:D2D2D2FF;200:D2D2D2FF &opacity=0.3&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
-        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-        id: 'mapbox/dark-v10',
-        // tileSize: 256,
-        zoomControl: false,
-        edgeBufferTiles: 5,
-        accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-        style: 'mapbox://styles/mapbox/dark-v10', 
-      });  
+
+      if ($("#weather_clouds_panel").hasClass("panel_open")) {
+        cloudsLayer.remove(map);
+        cloudsLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date=' + refreshTime + '&palette=0:FFFFFF00;10:FDFDFF19;20:FCFBFF26;30:FAFAFF33;40:F9F8FF4C;50:F7F7FF66;60:F6F5FF8C;70:F4F4FFBF;80:E9E9DFCC;90:DEDEDED8;100:D2D2D2FF;200:D2D2D2FF &opacity=0.3&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+          attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+          id: 'mapbox/dark-v10',
+          // tileSize: 256,
+          zoomControl: false,
+          edgeBufferTiles: 5,
+          accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
+          style: 'mapbox://styles/mapbox/dark-v10',
+        });
         cloudsLayer.addTo(map);
-  }
-  if($( "#weather_rain_panel" ).hasClass( "panel_open" )){ 
-      rainLayer.remove(map);    
-        rainLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/PAC0/{z}/{x}/{y}?date='+refreshTime+'&opacity=0.6&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
-        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-        id: 'mapbox/dark-v10',
-        // tileSize: 256,
-        zoomControl: false,
-        edgeBufferTiles: 15,
-        accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-        style: 'mapbox://styles/mapbox/dark-v10', 
-    }); 
-        rainLayer.addTo(map); 
-  }
+      }
+      if ($("#weather_rain_panel").hasClass("panel_open")) {
+        rainLayer.remove(map);
+        rainLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/PAC0/{z}/{x}/{y}?date=' + refreshTime + '&opacity=0.6&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+          attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+          id: 'mapbox/dark-v10',
+          // tileSize: 256,
+          zoomControl: false,
+          edgeBufferTiles: 15,
+          accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
+          style: 'mapbox://styles/mapbox/dark-v10',
+        });
+        rainLayer.addTo(map);
+      }
 
-  if($( "#weather_temp_panel" ).hasClass( "panel_open" )){ 
-      tempLayer.remove(map);
-      tempLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date='+refreshTime+'&opacity=0.3&palette=-65:C322DB;-55:C322DB;-45:C322DB;-40:C322DB;-30:9765FF;-20:2698FD;-10:20C4E8;0:23DDDD;10:C2FF28;20:FFF028;25:FFC228;30:FC8014&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+      if ($("#weather_temp_panel").hasClass("panel_open")) {
+        tempLayer.remove(map);
+        tempLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date=' + refreshTime + '&opacity=0.3&palette=-65:C322DB;-55:C322DB;-45:C322DB;-40:C322DB;-30:9765FF;-20:2698FD;-10:20C4E8;0:23DDDD;10:C2FF28;20:FFF028;25:FFC228;30:FC8014&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
           attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
           id: 'mapbox/dark-v10',
           // tileSize: 256,
           zoomControl: false,
           edgeBufferTiles: 5,
           accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-          style: 'mapbox://styles/mapbox/dark-v10', 
-      }); 
-      tempLayer.addTo(map);
-  }
+          style: 'mapbox://styles/mapbox/dark-v10',
+        });
+        tempLayer.addTo(map);
+      }
 
-  if($( "#weather_wind_panel" ).hasClass( "panel_open" )){ 
-      windLayer.remove(map);
-      windLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/WS10/{z}/{x}/{y}?date='+refreshTime+'&opacity=0.3&palette=1:FFFFFF;5:9EB2F6;15:557BFF;25:406AFF;50:2455FF;100:1343EC;200:11225E&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
+      if ($("#weather_wind_panel").hasClass("panel_open")) {
+        windLayer.remove(map);
+        windLayer = L.tileLayer('https://maps.openweathermap.org/maps/2.0/weather/WS10/{z}/{x}/{y}?date=' + refreshTime + '&opacity=0.3&palette=1:FFFFFF;5:9EB2F6;15:557BFF;25:406AFF;50:2455FF;100:1343EC;200:11225E&appid=faeeb9b8701d5f1c36c00e9f016cc027', {
           attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
           id: 'mapbox/dark-v10',
           // tileSize: 256,
           zoomControl: false,
           edgeBufferTiles: 5,
           accessToken: 'pk.eyJ1IjoidmVyc3N0YWNoaSIsImEiOiJja3Q1bjI1OG0wYTB1MndwaG0wZTI0eG0yIn0.KW23CHoSsSdBk52ntlTaRA',
-          style: 'mapbox://styles/mapbox/dark-v10', 
-      }); 
-        windLayer.addTo(map); 
-      } 
+          style: 'mapbox://styles/mapbox/dark-v10',
+        });
+        windLayer.addTo(map);
+      }
     }
-}
- 
+  }
 
-function callback() {  
-}
-const playbackOptions = {
+
+  function callback() {
+  }
+  const playbackOptions = {
     playControl: true,
     orientIcons: true,
     speed: 5,
     marker: function () {
-        return {
-            icon: markerIconOne,
-        };
+      return {
+        icon: markerIconOne,
+      };
     },
     clickCallback: function () {
-        sidebar.toggle();
+      sidebar.toggle();
     },
-};
+  };
 
-new L.Playback(map, [demoRoute], onPlaybackTimeChange, playbackOptions);
+  new L.Playback(map, [demoRoute], onPlaybackTimeChange, playbackOptions);
 
-const controls = document.querySelectorAll('.leaflet-control-layers.leaflet-control-layers-expanded.leaflet-control');
-controls[0].remove();
-controls[1].style.marginRight = '5rem';
-controls.forEach(control => {
+  const controls = document.querySelectorAll('.leaflet-control-layers.leaflet-control-layers-expanded.leaflet-control');
+  controls[0].remove();
+  controls[1].style.marginRight = '5rem';
+  controls.forEach(control => {
     control.style.marginRight = '5rem';
-});
-const observer = new MutationObserver((mutations) => {
+  });
+  const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutationRecord) => {
-        const { target } = mutationRecord;
-        const currentRotateStyle = target.style.transform.split(' ').find(item => item.includes('rotate'));
-        const currentRotateDegree = parseFloat(/\(([^)]+)\)/.exec(currentRotateStyle)[1]);
-        target.lastElementChild.style.transform = `rotate(${360 - Math.abs(currentRotateDegree)}deg)`;
+      const { target } = mutationRecord;
+      const currentRotateStyle = target.style.transform.split(' ').find(item => item.includes('rotate'));
+      const currentRotateDegree = parseFloat(/\(([^)]+)\)/.exec(currentRotateStyle)[1]);
+      target.lastElementChild.style.transform = `rotate(${360 - Math.abs(currentRotateDegree)}deg)`;
     });
-})
+  })
 
-const target = document.querySelector('.leaflet-marker-icon.marker-label.leaflet-zoom-animated.leaflet-interactive:nth-child(3)');
-target.lastElementChild.style.transform = 'rotate(48.14deg)';
-target.lastElementChild.style.marginLeft = '11rem';
-observer.observe(target, { attributes : true, attributeFilter : ['style'] });
-  
-// target.addEventListener('click', function targetFunc () {   
-//       sidebar.toggle(); 
-// }, false); 
-  
-// PLAYBACK FINISH
- 
+  const target = document.querySelector('.leaflet-marker-icon.marker-label.leaflet-zoom-animated.leaflet-interactive:nth-child(3)');
+  target.lastElementChild.style.transform = 'rotate(48.14deg)';
+  target.lastElementChild.style.marginLeft = '11rem';
+  observer.observe(target, { attributes: true, attributeFilter: ['style'] });
+
+  // target.addEventListener('click', function targetFunc () {   
+  //       sidebar.toggle(); 
+  // }, false); 
+
+  // PLAYBACK FINISH
+
 }
-  
+
 // custom Tabs
 var d = document,
   tabs = d.querySelector('.sidebar_tabs'),
   tab = d.querySelectorAll('.sidebar__li'),
   contents = d.querySelectorAll('.tabs__content');
-  if(tabs){
-    tabs.addEventListener('click', function(e) {
+if (tabs) {
+  tabs.addEventListener('click', function (e) {
     if (e.target && e.target.nodeName === 'LI') {
-    // change tabs
-    for (var i = 0; i < tab.length; i++) {
-      tab[i].classList.remove('active');
+      // change tabs
+      for (var i = 0; i < tab.length; i++) {
+        tab[i].classList.remove('active');
+      }
+      e.target.classList.toggle('active');
+
+
+      // change content
+      for (i = 0; i < contents.length; i++) {
+        contents[i].classList.remove('active');
+      }
+
+      var tabId = '#' + e.target.dataset.tabId;
+      d.querySelector(tabId).classList.toggle('active');
     }
-    e.target.classList.toggle('active');
-
-
-    // change content
-    for (i = 0; i < contents.length; i++) {
-      contents[i].classList.remove('active');
-    }
-
-    var tabId = '#' + e.target.dataset.tabId;
-      d.querySelector(tabId).classList.toggle('active'); 
-    }  
-  });  
+  });
 }
 var d = document,
   tabs = d.querySelector('.tabs'),
   tab = d.querySelectorAll('li'),
   contents = d.querySelectorAll('.tabs__content');
-if(tabs){
-  tabs.addEventListener('click', function(e) {
-  if (e.target && e.target.nodeName === 'LI') {
-  // change tabs
-    for (var i = 0; i < tab.length; i++) {
-      tab[i].classList.remove('open');
+if (tabs) {
+  tabs.addEventListener('click', function (e) {
+    if (e.target && e.target.nodeName === 'LI') {
+      // change tabs
+      for (var i = 0; i < tab.length; i++) {
+        tab[i].classList.remove('open');
+      }
+      e.target.classList.toggle('open');
+
+
+      // change content
+      for (i = 0; i < contents.length; i++) {
+        contents[i].classList.remove('open');
+      }
+
+      var tabId = '#' + e.target.dataset.tabId;
+      d.querySelector(tabId).classList.toggle('open');
     }
-    e.target.classList.toggle('open');
-
-
-    // change content
-    for (i = 0; i < contents.length; i++) {
-      contents[i].classList.remove('open');
-    }
-
-    var tabId = '#' + e.target.dataset.tabId;
-      d.querySelector(tabId).classList.toggle('open'); 
-    }  
   });
 }
 //end  custom Tabs
- 
+
 // custom sortTable 
 function sortTable() {
   var table, rows, switching, i, x, y, shouldSwitch;
@@ -712,7 +696,7 @@ function sortTable() {
       switching = true;
     }
   }
-} 
+}
 // end custom sortTable 
 
 
@@ -798,15 +782,15 @@ function sortTable() {
 then close all select boxes: */
 // document.addEventListener("click", closeAllSelect);
 // end custom Select
- 
+
 // hover link right panel
 function lonkHoverActive(elem) {
-    var a = document.getElementsByClassName("left_panel__link")
-    for (i = 0; i < a.length; i++) {
-        a[i].classList.remove('active')
-    }
-    elem.classList.toggle('active');
+  var a = document.getElementsByClassName("left_panel__link")
+  for (i = 0; i < a.length; i++) {
+    a[i].classList.remove('active')
+  }
+  elem.classList.toggle('active');
 }
- 
- 
+
+
 
